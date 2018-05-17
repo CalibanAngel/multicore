@@ -1,81 +1,47 @@
 package ex2;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.Semaphore;
 
-class Producer implements Runnable {
-    private BlockingQueue<Integer> numbersQueue;
-    private final int poisonPill;
-    private final int poisonPillPerProducer;
+class SemaphoreTest extends Thread {
+    private Semaphore semaphore;
 
-    Producer(BlockingQueue<Integer> numbersQueue, int poisonPill, int poisonPillPerProducer) {
-        this.numbersQueue = numbersQueue;
-        this.poisonPill = poisonPill;
-        this.poisonPillPerProducer = poisonPillPerProducer;
+    SemaphoreTest(Semaphore semaphore) {
+        this.semaphore = semaphore;
     }
 
     @Override
     public void run() {
         try {
-            generateNumbers();
+            System.out.println(Thread.currentThread().getName() + " : acquiring lock...");
+            System.out.println(Thread.currentThread().getName() + " : available Semaphore permits now: " + semaphore.availablePermits());
+
+            this.semaphore.acquire();
+            System.out.println(Thread.currentThread().getName() + " : got the permit!");
+
+            Thread.sleep(1000);
+
+            System.out.println(Thread.currentThread().getName() + " : releasing lock...");
+            semaphore.release();
+            System.out.println(Thread.currentThread().getName() + " : available Semaphore permits now: " + semaphore.availablePermits());
+
         } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+            e.printStackTrace();
         }
-    }
 
-    private void generateNumbers() throws InterruptedException {
-        for (int i = 0; i < 100; i++) {
-            numbersQueue.put(ThreadLocalRandom.current().nextInt(100));
-        }
-        for (int j = 0; j < poisonPillPerProducer; j++) {
-            numbersQueue.put(poisonPill);
-        }
-    }
-}
-
-class Consumer implements Runnable {
-    private BlockingQueue<Integer> numbersQueue;
-    private final int poisonPill;
-
-    Consumer(BlockingQueue<Integer> numbersQueue, int poisonPill) {
-        this.numbersQueue = numbersQueue;
-        this.poisonPill = poisonPill;
-    }
-
-    @Override
-    public void run() {
-        try {
-            while (true) {
-                Integer number = numbersQueue.take();
-                if (number.equals(poisonPill)) {
-                    return;
-                }
-                System.out.println(Thread.currentThread().getName() + " result: " + number);
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
     }
 }
 
 public class ex2 {
+    static private final int THREAD_NUMBER = 4;
+
     public static void main(String[] args) {
-        int BOUND = 10;
-        int N_PRODUCERS = 4;
-        int N_CONSUMERS = Runtime.getRuntime().availableProcessors();
-        int poisonPill = Integer.MAX_VALUE;
-        int poisonPillPerProducer = N_CONSUMERS / N_PRODUCERS;
+        SemaphoreTest threads[] = new SemaphoreTest[THREAD_NUMBER];
+        Semaphore semaphore = new Semaphore(THREAD_NUMBER / 2);
 
-        BlockingQueue<Integer> queue = new LinkedBlockingQueue<>(BOUND);
-
-        for (int i = 0; i < N_PRODUCERS; i++) {
-            new Thread(new Producer(queue, poisonPill, poisonPillPerProducer)).start();
+        System.out.println("Total available Semaphore permits : " + semaphore.availablePermits());
+        for (int i = 0; i < THREAD_NUMBER; i++) {
+            threads[i] = new SemaphoreTest(semaphore);
+            threads[i].start();
         }
-
-        for (int j = 0; j < N_CONSUMERS; j++) {
-            new Thread(new Consumer(queue, poisonPill)).start();
-        }
-
     }
 }

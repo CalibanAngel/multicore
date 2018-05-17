@@ -60,10 +60,11 @@ class Consumer implements Runnable {
 }
 
 public class ex1 {
+    static private final int BOUND = 10;
+    static private final int N_PRODUCERS = 2;
+    static private final int N_CONSUMERS = 4;
+
     public static void main(String[] args) {
-        int BOUND = 10;
-        int N_PRODUCERS = 4;
-        int N_CONSUMERS = Runtime.getRuntime().availableProcessors();
         int poisonPill = Integer.MAX_VALUE;
         int poisonPillPerProducer = N_CONSUMERS / N_PRODUCERS;
 
